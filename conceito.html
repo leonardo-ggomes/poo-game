@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KotlinQuest — Aprenda POO com RPG</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a1a;
+    --panel: #111128;
+    --panel2: #16163a;
+    --border: #3a3a7a;
+    --accent: #f7c948;
+    --accent2: #ff6b6b;
+    --accent3: #6bffb8;
+    --accent4: #6bb5ff;
+    --text: #e8e8ff;
+    --dim: #8888aa;
+    --code-bg: #07071a;
+    --warrior: #ff8c42;
+    --mage: #a06bff;
+    --ranger: #6bffb8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Pixel grid background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(100,100,200,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100,100,200,.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Stars */
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--d,3s) infinite alternate;
+    opacity: .4;
+  }
+  @keyframes twinkle { to { opacity: 1; transform: scale(1.5); } }
+
+  /* ===== LAYOUT ===== */
+  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 16px; }
+
+  /* HEADER */
+  header {
+    text-align: center;
+    padding: 28px 16px 18px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(16px, 4vw, 28px);
+    color: var(--accent);
+    text-shadow: 0 0 20px #f7c94888, 4px 4px 0 #8b6000;
+    letter-spacing: 2px;
+    line-height: 1.5;
+  }
+  .logo span { color: var(--accent3); }
+  .tagline {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: var(--dim);
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+  .xp-bar-wrap { margin-top: 14px; }
+  .xp-label { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--accent); margin-bottom: 4px; }
+  .xp-track { height: 10px; background: #222244; border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
+  .xp-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent));
+    border-radius: 99px;
+    transition: width 0.8s cubic-bezier(.2,1,.3,1);
+    box-shadow: 0 0 8px var(--accent3);
+  }
+
+  /* NAV TABS */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .tab {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    background: var(--panel);
+    color: var(--dim);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all .2s;
+    letter-spacing: .5px;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+  .tab.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px #f7c94866;
+  }
+  .tab .icon { font-size: 12px; display: block; margin-bottom: 4px; }
+
+  /* PANELS */
+  .panel {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    animation: fadeIn .3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+
+  .panel-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  /* CONCEPT CARD */
+  .concept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .concept-card {
+    background: var(--panel2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .concept-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--card-color, var(--accent));
+  }
+  .concept-card:hover { transform: translateY(-4px); border-color: var(--card-color, var(--accent)); box-shadow: 0 8px 24px #0006; }
+  .concept-card.unlocked { opacity: 1; }
+  .concept-card.locked { opacity: .45; filter: grayscale(.8); cursor: not-allowed; }
+  .concept-card .c-icon { font-size: 32px; margin-bottom: 8px; }
+  .concept-card .c-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--card-color, var(--accent));
+    margin-bottom: 6px;
+  }
+  .concept-card .c-desc { font-size: 13px; color: var(--dim); line-height: 1.5; }
+  .concept-card .c-badge {
+    position: absolute; top: 8px; right: 8px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: #0004;
+    color: var(--accent3);
+    border: 1px solid var(--accent3);
+  }
+  .concept-card.done .c-badge { background: var(--accent3); color: #000; }
+
+  /* LESSON VIEW */
+  #lesson-view { display: none; }
+  .lesson-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .btn-back {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    background: none;
+    border: 2px solid var(--border);
+    color: var(--dim);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-back:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Story Box */
+  .story-box {
+    background: #07071e;
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    line-height: 1.6;
+    color: #dde;
+    position: relative;
+  }
+  .story-box::before {
+    content: '📜 NARRADOR';
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .story-char { color: var(--accent); font-weight: bold; }
+  .story-code { color: var(--accent3); }
+
+  /* Code block */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 12px 0;
+    position: relative;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; }
+  .kw { color: #ff79c6; }
+  .cls { color: #8be9fd; }
+  .fn { color: #50fa7b; }
+  .str { color: #f1fa8c; }
+  .num { color: #bd93f9; }
+  .cmnt { color: #6272a4; font-style: italic; }
+  .prop { color: #ffb86c; }
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    padding: 4px 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .copy-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  /* QUIZ */
+  .quiz-box {
+    background: var(--panel2);
+    border: 2px solid var(--accent4);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .quiz-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--accent4);
+    margin-bottom: 12px;
+  }
+  .quiz-q { font-size: 16px; margin-bottom: 14px; line-height: 1.5; }
+  .quiz-options { display: grid; gap: 8px; }
+  .quiz-opt {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all .2s;
+    text-align: left;
+    color: var(--text);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .quiz-opt:hover:not(:disabled) { border-color: var(--accent4); background: #1a1a3a; transform: translateX(4px); }
+  .quiz-opt.correct { border-color: var(--accent3); background: #0a2a1a; color: var(--accent3); }
+  .quiz-opt.wrong { border-color: var(--accent2); background: #2a0a0a; color: var(--accent2); }
+  .quiz-opt:disabled { cursor: default; }
+  .quiz-feedback {
+    margin-top: 12px;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    display: none;
+  }
+  .quiz-feedback.win { background: #0a2a1a; color: var(--accent3); border: 1px solid var(--accent3); }
+  .quiz-feedback.lose { background: #2a0a0a; color: var(--accent2); border: 1px solid var(--accent2); }
+
+  /* HERO BUILDER */
+  .hero-builder { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:600px) { .hero-builder { grid-template-columns: 1fr; } }
+  .hero-display {
+    background: var(--panel2);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .hero-sprite {
+    font-size: 72px;
+    margin-bottom: 12px;
+    display: block;
+    animation: float 2.5s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .hero-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .hero-class {
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: var(--dim);
+    margin-bottom: 14px;
+  }
+  .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .stat-label { font-size: 11px; color: var(--dim); width: 70px; text-align: right; }
+  .stat-bar { flex: 1; height: 8px; background: #222244; border-radius: 99px; overflow: hidden; }
+  .stat-fill { height: 100%; border-radius: 99px; transition: width .6s; }
+  .stat-val { font-family: 'VT323', monospace; font-size: 16px; width: 28px; }
+
+  .hero-code-panel { }
+  .hero-code-panel .code-block { min-height: 200px; }
+  .live-update { font-family: 'VT323', monospace; font-size: 16px; color: var(--accent3); margin-top: 8px; }
+
+  /* CLASS SELECT */
+  .class-cards { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .class-card {
+    flex: 1; min-width: 120px;
+    background: var(--panel2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all .2s;
+  }
+  .class-card:hover { transform: translateY(-3px); }
+  .class-card.sel { border-color: var(--cls-color, var(--accent)); box-shadow: 0 0 16px var(--cls-color, #0004); }
+  .class-card .cl-icon { font-size: 32px; display: block; margin-bottom: 6px; }
+  .class-card .cl-name { font-family: 'Press Start 2P', monospace; font-size: 7px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  label { font-size: 13px; color: var(--dim); }
+
+  /* BATTLE */
+  .battle-arena {
+    background: radial-gradient(ellipse at 50% 80%, #1a0a2a 0%, var(--panel2) 70%);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    min-height: 260px;
+    position: relative;
+    overflow: hidden;
+  }
+  .combatants { display: flex; justify-content: space-around; align-items: flex-end; margin-bottom: 12px; }
+  .combatant { text-align: center; }
+  .combatant .sprite { font-size: 56px; display: block; }
+  .combatant .c-name-tag { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--accent); }
+  .hp-bar-wrap { margin-top: 6px; }
+  .hp-track { height: 8px; background: #300; border-radius: 99px; overflow: hidden; margin: 4px 0; border: 1px solid #600; }
+  .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4444, #ff8800); border-radius: 99px; transition: width .5s; }
+  .hp-label { font-family: 'VT323', monospace; font-size: 14px; color: var(--dim); }
+  .vs-badge { font-family: 'Press Start 2P', monospace; font-size: 14px; color: var(--accent2); align-self: center; text-shadow: 0 0 10px #ff6b6b; }
+  .battle-log {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    min-height: 80px;
+    text-align: left;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .log-entry { animation: slideIn .3s ease; }
+  @keyframes slideIn { from { opacity:0; transform:translateX(-8px) } to { opacity:1 } }
+  .log-dmg { color: var(--accent2); }
+  .log-heal { color: var(--accent3); }
+  .log-info { color: var(--accent4); }
+  .battle-btns { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    padding: 10px 16px;
+    border: 2px solid;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: .5px;
+  }
+  .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn-primary:hover { box-shadow: 0 4px 16px #f7c94866; transform: translateY(-2px); }
+  .btn-danger { background: none; color: var(--accent2); border-color: var(--accent2); }
+  .btn-danger:hover { background: var(--accent2); color: #fff; transform: translateY(-2px); }
+  .btn-green { background: none; color: var(--accent3); border-color: var(--accent3); }
+  .btn-green:hover { background: var(--accent3); color: #000; transform: translateY(-2px); }
+  .btn-blue { background: none; color: var(--accent4); border-color: var(--accent4); }
+  .btn-blue:hover { background: var(--accent4); color: #000; transform: translateY(-2px); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  /* POLYMORPHISM DEMO */
+  .poly-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 12px 0; }
+  .poly-card {
+    background: var(--code-bg);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    transition: all .3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .poly-card.highlighted {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px #f7c94840;
+    transform: scale(1.04);
+  }
+  .poly-card .p-sprite { font-size: 40px; display: block; margin-bottom: 8px; }
+  .poly-card .p-class { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--accent); margin-bottom: 4px; }
+  .poly-card .p-output { font-family: 'VT323', monospace; font-size: 18px; color: var(--accent3); min-height: 28px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--panel);
+    border: 2px solid var(--accent3);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--accent3);
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .4s cubic-bezier(.2,1,.3,1);
+    box-shadow: 0 8px 32px #0008;
+    max-width: 280px;
+  }
+  .toast.show { transform: none; opacity: 1; }
+  .toast .t-xp { color: var(--accent); display: block; margin-top: 4px; }
+
+  /* PROGRESS */
+  .progress-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .prog-item { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+  .prog-item .pi-icon { font-size: 28px; margin-bottom: 4px; }
+  .prog-item .pi-name { font-family: 'Press Start 2P', monospace; font-size: 6px; color: var(--dim); margin-bottom: 6px; }
+  .prog-item.done .pi-name { color: var(--accent3); }
+  .prog-item .pi-check { font-size: 16px; }
+
+  /* Responsive */
+  @media(max-width:480px) { .concept-grid { grid-template-columns: 1fr; } .tabs { gap:4px; } .tab { font-size: 6px; padding: 8px 10px; } }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="app">
+  <header>
+    <div class="logo">⚔️ Kotlin<span>Quest</span></div>
+    <div class="tagline">// Aprenda POO através de aventuras épicas</div>
+    <div class="xp-bar-wrap">
+      <div class="xp-label">XP: <span id="xp-count">0</span> / 500</div>
+      <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('world')" id="tab-world"><span class="icon">🗺️</span>MUNDO</button>
+    <button class="tab" onclick="showTab('hero')" id="tab-hero"><span class="icon">🧙</span>HERÓI</button>
+    <button class="tab" onclick="showTab('battle')" id="tab-battle"><span class="icon">⚔️</span>BATALHA</button>
+    <button class="tab" onclick="showTab('poly')" id="tab-poly"><span class="icon">🔮</span>MAGIA</button>
+    <button class="tab" onclick="showTab('progress')" id="tab-progress"><span class="icon">🏆</span>PROGRESSO</button>
+  </div>
+
+  <!-- ===== WORLD (lessons) ===== -->
+  <div id="tab-world-content">
+
+    <div id="world-map">
+      <div class="panel">
+        <div class="panel-title">🗺️ MAPA DO CONHECIMENTO</div>
+        <div class="concept-grid" id="concept-grid"></div>
+      </div>
+    </div>
+
+    <div id="lesson-view">
+      <div class="lesson-header">
+        <button class="btn-back" onclick="backToMap()">◀ VOLTAR</button>
+        <div class="panel-title" id="lesson-title" style="margin:0;flex:1"></div>
+      </div>
+      <div id="lesson-content"></div>
+    </div>
+
+  </div>
+
+  <!-- ===== HERO BUILDER ===== -->
+  <div id="tab-hero-content" style="display:none">
+    <div class="panel">
+      <div class="panel-title">🧙 CONSTRUTOR DE HERÓI — Aprenda Classes!</div>
+      <p style="font-size:14px;color:var(--dim);margin-bottom:16px">
+        Em Kotlin, uma <strong style="color:var(--accent)">classe</strong> é como uma planta de fábrica de heróis.
+        Cada herói criado é um <strong style="color:var(--accent3)">objeto</strong>!
+      </p>
+
+      <div class="hero-builder">
+        <div>
+          <!-- Class select -->
+          <p style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--dim);margin-bottom:8px">ESCOLHA A CLASSE:</p>
+          <div class="class-cards">
+            <div class="class-card sel" style="--cls-color:var(--warrior)" onclick="selectClass('Guerreiro','⚔️',this,'var(--warrior)')" id="cls-Guerreiro">
+              <span class="cl-icon">⚔️</span>
+              <span class="cl-name" style="color:var(--warrior)">GUERREIRO</span>
+            </div>
+            <div class="class-card" style="--cls-color:var(--mage)" onclick="selectClass('Mago','🔮',this,'var(--mage)')" id="cls-Mago">
+              <span class="cl-icon">🔮</span>
+              <span class="cl-name" style="color:var(--mage)">MAGO</span>
+            </div>
+            <div class="class-card" style="--cls-color:var(--ranger)" onclick="selectClass('Arqueiro','🏹',this,'var(--ranger)')" id="cls-Arqueiro">
+              <span class="cl-icon">🏹</span>
+              <span class="cl-name" style="color:var(--ranger)">ARQUEIRO</span>
+            </div>
+          </div>
+
+          <!-- Stats sliders -->
+          <p style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--dim);margin-bottom:10px">DISTRIBUA OS ATRIBUTOS:</p>
+
+          <div style="margin-bottom:10px">
+            <label>⚔️ Força: <span id="val-forca">50</span></label>
+            <input type="range" min="1" max="100" value="50" id="sl-forca" oninput="updateHero()">
+          </div>
+          <div style="margin-bottom:10px">
+            <label>🛡️ Defesa: <span id="val-defesa">30</span></label>
+            <input type="range" min="1" max="100" value="30" id="sl-defesa" oninput="updateHero()">
+          </div>
+          <div style="margin-bottom:10px">
+            <label>⚡ Velocidade: <span id="val-vel">60</span></label>
+            <input type="range" min="1" max="100" value="60" id="sl-vel" oninput="updateHero()">
+          </div>
+
+          <div style="margin-top:14px">
+            <label style="font-size:13px;color:var(--dim)">📛 Nome do Herói:</label>
+            <input type="text" id="hero-name-input" value="Thorin" oninput="updateHero()"
+              style="display:block;margin-top:6px;width:100%;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'VT323',monospace;font-size:18px;outline:none">
+          </div>
+        </div>
+
+        <div>
+          <!-- Hero display -->
+          <div class="hero-display" style="margin-bottom:12px">
+            <span class="hero-sprite" id="hero-sprite">⚔️</span>
+            <div class="hero-name" id="hero-name-display">Thorin</div>
+            <div class="hero-class" id="hero-class-display">Guerreiro</div>
+            <div class="stat-row">
+              <span class="stat-label">Força</span>
+              <div class="stat-bar"><div class="stat-fill" id="bar-forca" style="width:50%;background:#ff8c42"></div></div>
+              <span class="stat-val" id="num-forca">50</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Defesa</span>
+              <div class="stat-bar"><div class="stat-fill" id="bar-defesa" style="width:30%;background:#6bb5ff"></div></div>
+              <span class="stat-val" id="num-defesa">30</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Velocidade</span>
+              <div class="stat-bar"><div class="stat-fill" id="bar-vel" style="width:60%;background:#6bffb8"></div></div>
+              <span class="stat-val" id="num-vel">60</span>
+            </div>
+          </div>
+
+          <!-- Live Kotlin code -->
+          <div class="code-block" id="hero-code-output"></div>
+          <div class="live-update">✨ Código gerado em tempo real!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BATTLE ===== -->
+  <div id="tab-battle-content" style="display:none">
+    <div class="panel">
+      <div class="panel-title">⚔️ ARENA — Veja Herança em Ação!</div>
+      <p style="font-size:14px;color:var(--dim);margin-bottom:16px">
+        Todos os heróis <strong style="color:var(--accent)">herdam</strong> de <code style="color:var(--accent3)">Personagem</code>.
+        Mas cada um tem habilidades <strong style="color:var(--accent2)">únicas</strong> — isso é <strong style="color:var(--accent)">Herança</strong>!
+      </p>
+
+      <div class="code-block" style="margin-bottom:16px">
+<span class="cmnt">// Classe PAI (superclasse)</span>
+<span class="line"><span class="kw">open class</span> <span class="cls">Personagem</span>(<span class="kw">val</span> <span class="prop">nome</span>: <span class="cls">String</span>, <span class="kw">val</span> <span class="prop">hp</span>: <span class="cls">Int</span>) {</span>
+<span class="line">    <span class="kw">open fun</span> <span class="fn">atacar</span>(): <span class="cls">Int</span> = <span class="num">10</span>  <span class="cmnt">// ataque base</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="cmnt">// Classes FILHAS (subclasses) — herdam de Personagem</span>
+<span class="line"><span class="kw">class</span> <span class="cls">Guerreiro</span>(<span class="prop">nome</span>: <span class="cls">String</span>) : <span class="cls">Personagem</span>(<span class="prop">nome</span>, <span class="num">100</span>) {</span>
+<span class="line">    <span class="kw">override fun</span> <span class="fn">atacar</span>() = <span class="num">30</span>    <span class="cmnt">// sobrescrita!</span></span>
+<span class="line">}</span>
+<span class="line"><span class="kw">class</span> <span class="cls">Mago</span>(<span class="prop">nome</span>: <span class="cls">String</span>) : <span class="cls">Personagem</span>(<span class="prop">nome</span>, <span class="num">60</span>) {</span>
+<span class="line">    <span class="kw">override fun</span> <span class="fn">atacar</span>() = <span class="num">50</span>    <span class="cmnt">// mais dano, menos HP</span></span>
+<span class="line">}</span>
+      </div>
+
+      <div class="battle-arena">
+        <div class="combatants">
+          <div class="combatant">
+            <span class="sprite" id="b-hero-sprite">⚔️</span>
+            <div class="c-name-tag" id="b-hero-name">Guerreiro</div>
+            <div class="hp-bar-wrap">
+              <div class="hp-track"><div class="hp-fill" id="b-hero-hp" style="width:100%"></div></div>
+              <div class="hp-label">HP: <span id="b-hero-hp-val">100</span></div>
+            </div>
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="combatant">
+            <span class="sprite" id="b-enemy-sprite">👹</span>
+            <div class="c-name-tag" id="b-enemy-name">Goblin</div>
+            <div class="hp-bar-wrap">
+              <div class="hp-track"><div class="hp-fill" id="b-enemy-hp" style="width:100%"></div></div>
+              <div class="hp-label">HP: <span id="b-enemy-hp-val">80</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="battle-log" id="battle-log">
+          <span style="color:var(--dim);font-family:'VT323',monospace;font-size:18px">// Selecione seu herói e comece a batalha!</span>
+        </div>
+      </div>
+
+      <div class="battle-btns" style="margin-top:14px">
+        <select id="hero-select" style="background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'VT323',monospace;font-size:18px">
+          <option value="guerreiro">⚔️ Guerreiro (HP:100, ATK:30)</option>
+          <option value="mago">🔮 Mago (HP:60, ATK:50)</option>
+          <option value="arqueiro">🏹 Arqueiro (HP:80, ATK:35)</option>
+        </select>
+        <button class="btn btn-primary" onclick="startBattle()" id="btn-start">▶ INICIAR</button>
+        <button class="btn btn-danger" onclick="attackEnemy()" id="btn-attack" disabled>⚔️ ATACAR</button>
+        <button class="btn btn-green" onclick="healHero()" id="btn-heal" disabled>💚 CURAR</button>
+        <button class="btn btn-blue" onclick="resetBattle()">🔄 RESET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== POLY ===== -->
+  <div id="tab-poly-content" style="display:none">
+    <div class="panel">
+      <div class="panel-title">🔮 POLIMORFISMO — Um Feitiço, Muitos Efeitos!</div>
+      <p style="font-size:14px;color:var(--dim);margin-bottom:16px">
+        <strong style="color:var(--accent)">Polimorfismo</strong> = mesma função, comportamentos diferentes!
+        Chame <code style="color:var(--accent3)">atacar()</code> em qualquer herói e cada um reage de seu jeito.
+      </p>
+
+      <div class="code-block">
+<span class="cmnt">// Uma lista com tipos DIFERENTES, mas todos são Personagem</span>
+<span class="line"><span class="kw">val</span> <span class="prop">grupo</span>: <span class="cls">List</span>&lt;<span class="cls">Personagem</span>&gt; = <span class="fn">listOf</span>(</span>
+<span class="line">    <span class="cls">Guerreiro</span>(<span class="str">"Thorin"</span>),</span>
+<span class="line">    <span class="cls">Mago</span>(<span class="str">"Merlin"</span>),</span>
+<span class="line">    <span class="cls">Arqueiro</span>(<span class="str">"Legolas"</span>)</span>
+<span class="line">)</span>
+<span class="line"></span>
+<span class="cmnt">// Mesmo código, resultados diferentes — POLIMORFISMO!</span>
+<span class="line"><span class="kw">for</span> (<span class="prop">heroi</span> <span class="kw">in</span> <span class="prop">grupo</span>) {</span>
+<span class="line">    <span class="fn">println</span>(<span class="str">"${heroi.nome} ataca com ${heroi.atacar()} de dano!"</span>)</span>
+<span class="line">}</span>
+      </div>
+
+      <p style="font-size:14px;color:var(--dim);margin:14px 0 10px">
+        Clique em <strong style="color:var(--accent)">"Executar Feitiço"</strong> para ver cada herói em ação:
+      </p>
+
+      <div class="poly-cards">
+        <div class="poly-card" id="poly-guerreiro">
+          <span class="p-sprite">⚔️</span>
+          <div class="p-class">Guerreiro</div>
+          <div class="p-output" id="po-guerreiro">—</div>
+        </div>
+        <div class="poly-card" id="poly-mago">
+          <span class="p-sprite">🔮</span>
+          <div class="p-class">Mago</div>
+          <div class="p-output" id="po-mago">—</div>
+        </div>
+        <div class="poly-card" id="poly-arqueiro">
+          <span class="p-sprite">🏹</span>
+          <div class="p-class">Arqueiro</div>
+          <div class="p-output" id="po-arqueiro">—</div>
+        </div>
+        <div class="poly-card" id="poly-druida">
+          <span class="p-sprite">🌿</span>
+          <div class="p-class">Druida</div>
+          <div class="p-output" id="po-druida">—</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-primary" onclick="runPolymorphism()" style="font-size:9px;padding:14px 24px">
+          ⚡ EXECUTAR FEITIÇO (atacar())
+        </button>
+      </div>
+
+      <div class="panel" style="margin-top:20px;border-color:var(--accent2)">
+        <div class="panel-title" style="color:var(--accent2)">🧠 ENCAPSULAMENTO — Proteja seus Segredos!</div>
+        <p style="font-size:14px;color:var(--dim);margin-bottom:12px">
+          Em Kotlin, use <code style="color:var(--accent)">private</code> para esconder atributos e
+          <code style="color:var(--accent3)">get/set</code> para controlá-los. Como uma armadura protege o herói!
+        </p>
+        <div class="code-block">
+<span class="kw">class</span> <span class="cls">Mago</span>(<span class="prop">nome</span>: <span class="cls">String</span>) {</span>
+<span class="line">    <span class="kw">private var</span> <span class="prop">_mana</span> = <span class="num">100</span>   <span class="cmnt">// privado — ninguém acessa diretamente!</span></span>
+<span class="line"></span>
+<span class="line">    <span class="kw">var</span> <span class="prop">mana</span>: <span class="cls">Int</span>              <span class="cmnt">// propriedade pública com proteção</span></span>
+<span class="line">        <span class="kw">get</span>() = <span class="prop">_mana</span></span>
+<span class="line">        <span class="kw">set</span>(<span class="prop">valor</span>) {</span>
+<span class="line">            <span class="kw">if</span> (<span class="prop">valor</span> >= <span class="num">0</span>) <span class="prop">_mana</span> = <span class="prop">valor</span>  <span class="cmnt">// validação!</span></span>
+<span class="line">        }</span>
+<span class="line">}</span>
+        </div>
+        <div class="quiz-box">
+          <div class="quiz-title">⚡ QUIZ — ENCAPSULAMENTO</div>
+          <div class="quiz-q">Por que usamos <code>private</code> em variáveis de uma classe?</div>
+          <div class="quiz-options" id="quiz-enc-opts">
+            <button class="quiz-opt" onclick="checkQuiz(this,'enc',false)">🅰️ Para deixar o código mais colorido</button>
+            <button class="quiz-opt" onclick="checkQuiz(this,'enc',true)">🅱️ Para proteger dados e controlar como são modificados</button>
+            <button class="quiz-opt" onclick="checkQuiz(this,'enc',false)">🅲 Para que o código rode mais rápido</button>
+            <button class="quiz-opt" onclick="checkQuiz(this,'enc',false)">🅳 Não tem utilidade, é opcional sem benefício</button>
+          </div>
+          <div class="quiz-feedback" id="qf-enc"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROGRESS ===== -->
+  <div id="tab-progress-content" style="display:none">
+    <div class="panel">
+      <div class="panel-title">🏆 SEU PROGRESSO</div>
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-family:'Press Start 2P',monospace;font-size:14px;color:var(--accent);margin-bottom:4px">
+          NÍVEL <span id="prog-level">1</span>
+        </div>
+        <div style="font-family:'VT323',monospace;font-size:20px;color:var(--dim)">
+          XP Total: <span id="prog-xp">0</span> pontos
+        </div>
+      </div>
+      <div class="progress-grid" id="progress-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-msg">+50 XP!</span>
+  <span class="t-xp" id="toast-xp"></span>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const concepts = [
+  {
+    id:'class', icon:'🏗️', name:'Classes & Objetos', color:'var(--accent)',
+    xp:50, unlocked:true,
+    story:`No reino de <span class="story-char">Kotlinia</span>, o Grande Arquiteto criou uma <span class="story-code">planta mágica</span> chamada <span class="story-char">Personagem</span>. Com ela, podia conjurar infinitos heróis!`,
+    explanation:`Uma <strong style="color:var(--accent)">classe</strong> é um molde/planta. Um <strong style="color:var(--accent3)">objeto</strong> é algo criado a partir desse molde.`,
+    code:`<span class="cmnt">// CLASSE = molde para criar heróis</span>
+<span class="line"><span class="kw">class</span> <span class="cls">Personagem</span>(<span class="kw">val</span> <span class="prop">nome</span>: <span class="cls">String</span>, <span class="kw">val</span> <span class="prop">hp</span>: <span class="cls">Int</span>) {</span>
+<span class="line">    <span class="kw">fun</span> <span class="fn">apresentar</span>() {</span>
+<span class="line">        <span class="fn">println</span>(<span class="str">"Eu sou $nome e tenho $hp de vida!"</span>)</span>
+<span class="line">    }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="cmnt">// OBJETOS = heróis criados a partir da classe</span>
+<span class="line"><span class="kw">val</span> <span class="prop">heroi1</span> = <span class="cls">Personagem</span>(<span class="str">"Thorin"</span>, <span class="num">100</span>)</span>
+<span class="line"><span class="kw">val</span> <span class="prop">heroi2</span> = <span class="cls">Personagem</span>(<span class="str">"Elara"</span>, <span class="num">80</span>)</span>
+<span class="line"><span class="prop">heroi1</span>.<span class="fn">apresentar</span>()  <span class="cmnt">// Eu sou Thorin e tenho 100 de vida!</span></span>`,
+    quiz:{
+      q:'O que é um OBJETO em Programação Orientada a Objetos?',
+      opts:['Um arquivo de imagem no computador','Uma instância criada a partir de uma classe','Um tipo de variável numérica','Um comando do terminal'],
+      correct:1,
+      feedback:'🎉 Exato! Um objeto é uma INSTÂNCIA de uma classe — um herói criado a partir do molde!'
+    }
+  },
+  {
+    id:'inheritance', icon:'🧬', name:'Herança', color:'var(--accent3)',
+    xp:75, unlocked:true,
+    story:`A lendária <span class="story-char">Guilda dos Aventureiros</span> descobriu que todos os heróis compartilham poderes básicos. Criaram então uma classe <span class="story-code">aberta</span> para ser herdada!`,
+    explanation:`<strong style="color:var(--accent3)">Herança</strong> permite que uma classe filha herde atributos e métodos da classe pai, podendo personalizá-los.`,
+    code:`<span class="cmnt">// Classe PAI — open permite ser herdada</span>
+<span class="line"><span class="kw">open class</span> <span class="cls">Heroi</span>(<span class="kw">val</span> <span class="prop">nome</span>: <span class="cls">String</span>) {</span>
+<span class="line">    <span class="kw">open fun</span> <span class="fn">habilidade</span>() = <span class="fn">println</span>(<span class="str">"Ataque básico!"</span>)</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="cmnt">// Classes FILHAS herdam com ":"</span>
+<span class="line"><span class="kw">class</span> <span class="cls">Guerreiro</span>(<span class="prop">nome</span>: <span class="cls">String</span>) : <span class="cls">Heroi</span>(<span class="prop">nome</span>) {</span>
+<span class="line">    <span class="kw">override fun</span> <span class="fn">habilidade</span>() = <span class="fn">println</span>(<span class="str">"🗡️ Golpe Brutal!"</span>)</span>
+<span class="line">}</span>
+<span class="line"><span class="kw">class</span> <span class="cls">Mago</span>(<span class="prop">nome</span>: <span class="cls">String</span>) : <span class="cls">Heroi</span>(<span class="prop">nome</span>) {</span>
+<span class="line">    <span class="kw">override fun</span> <span class="fn">habilidade</span>() = <span class="fn">println</span>(<span class="str">"✨ Bola de Fogo!"</span>)</span>
+<span class="line">}</span>`,
+    quiz:{
+      q:'Em Kotlin, o que a palavra-chave "open" faz em uma classe?',
+      opts:['Abre um arquivo no sistema','Permite que a classe seja herdada por outras classes','Torna os métodos públicos na internet','Cria um novo objeto automaticamente'],
+      correct:1,
+      feedback:'🏆 Correto! "open" libera a classe para ser herdada. Sem ela, a classe é "fechada" (final) por padrão em Kotlin!'
+    }
+  },
+  {
+    id:'encap', icon:'🔒', name:'Encapsulamento', color:'var(--accent2)',
+    xp:75, unlocked:true,
+    story:`O Mago <span class="story-char">Kael</span> guardava seus feitiços em um livro <span class="story-code">trancado</span>. Ninguém podia alterar as receitas — apenas usar os feitiços prontos!`,
+    explanation:`<strong style="color:var(--accent2)">Encapsulamento</strong> = esconder dados internos e expor apenas o necessário. Protege o estado do objeto!`,
+    code:`<span class="kw">class</span> <span class="cls">BolsaMagica</span> {</span>
+<span class="line">    <span class="kw">private var</span> <span class="prop">ouro</span> = <span class="num">0</span>      <span class="cmnt">// privado — escondido!</span></span>
+<span class="line"></span>
+<span class="line">    <span class="kw">fun</span> <span class="fn">depositar</span>(<span class="prop">qtd</span>: <span class="cls">Int</span>) {</span>
+<span class="line">        <span class="kw">if</span> (<span class="prop">qtd</span> > <span class="num">0</span>) <span class="prop">ouro</span> += <span class="prop">qtd</span>  <span class="cmnt">// validação!</span></span>
+<span class="line">    }</span>
+<span class="line">    <span class="kw">fun</span> <span class="fn">verSaldo</span>() = <span class="prop">ouro</span>      <span class="cmnt">// acesso controlado</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="kw">val</span> <span class="prop">bolsa</span> = <span class="cls">BolsaMagica</span>()</span>
+<span class="line"><span class="prop">bolsa</span>.<span class="fn">depositar</span>(<span class="num">50</span>)</span>
+<span class="line"><span class="cmnt">// bolsa.ouro = -999  ❌ ERRO! privado</span></span>
+<span class="line"><span class="fn">println</span>(<span class="prop">bolsa</span>.<span class="fn">verSaldo</span>())   <span class="cmnt">// ✅ 50</span></span>`,
+    quiz:{
+      q:'Qual modificador torna um atributo acessível APENAS dentro da própria classe?',
+      opts:['public','internal','private','protected'],
+      correct:2,
+      feedback:'🔐 Perfeito! "private" esconde o dado dentro da classe — só ela pode mexer!'
+    }
+  },
+  {
+    id:'poly', icon:'🔮', name:'Polimorfismo', color:'var(--mage)',
+    xp:100, unlocked:true,
+    story:`A feiticeira <span class="story-char">Lyra</span> descobriu um feitiço universal: <span class="story-code">atacar()</span>. Quando lançado em diferentes criaturas, cada uma respondia à sua própria maneira!`,
+    explanation:`<strong style="color:var(--mage)">Polimorfismo</strong> = mesmo método, comportamentos diferentes. Uma lista pode conter tipos variados e chamar o mesmo método em todos!`,
+    code:`<span class="cmnt">// Polimorfismo em ação!</span>
+<span class="line"><span class="kw">val</span> <span class="prop">grupo</span>: <span class="cls">List</span>&lt;<span class="cls">Heroi</span>&gt; = <span class="fn">listOf</span>(</span>
+<span class="line">    <span class="cls">Guerreiro</span>(<span class="str">"Thorin"</span>),</span>
+<span class="line">    <span class="cls">Mago</span>(<span class="str">"Merlin"</span>),</span>
+<span class="line">    <span class="cls">Arqueiro</span>(<span class="str">"Legolas"</span>)</span>
+<span class="line">)</span>
+<span class="line"></span>
+<span class="line"><span class="kw">for</span> (<span class="prop">h</span> <span class="kw">in</span> <span class="prop">grupo</span>) {</span>
+<span class="line">    <span class="prop">h</span>.<span class="fn">habilidade</span>()    <span class="cmnt">// cada um reage diferente!</span></span>
+<span class="line">}</span>
+<span class="cmnt">// 🗡️ Golpe Brutal!</span>
+<span class="cmnt">// ✨ Bola de Fogo!</span>
+<span class="cmnt">// 🏹 Flecha Certeira!</span>`,
+    quiz:{
+      q:'Qual é a principal vantagem do polimorfismo?',
+      opts:['Deixa o código mais curto','Permite usar o mesmo código para tratar objetos de tipos diferentes','Aumenta a velocidade do programa','Elimina a necessidade de classes'],
+      correct:1,
+      feedback:'🌟 Incrível! Polimorfismo nos deixa escrever código genérico que funciona com qualquer subtipo!'
+    }
+  },
+  {
+    id:'interface', icon:'📜', name:'Interfaces', color:'#f0a',
+    xp:100, unlocked:true,
+    story:`O Rei decretou: todo cidadão do reino DEVE saber <span class="story-code">lutar()</span> e <span class="story-code">falar()</span>. Não importa se é humano, elfo ou anão — todos seguem o mesmo <span class="story-char">contrato</span>!`,
+    explanation:`<strong style="color:#f0a">Interfaces</strong> definem um contrato de comportamento. Qualquer classe que implemente deve seguir as regras!`,
+    code:`<span class="kw">interface</span> <span class="cls">Aventureiro</span> {</span>
+<span class="line">    <span class="kw">fun</span> <span class="fn">explorar</span>()          <span class="cmnt">// obrigatório implementar</span></span>
+<span class="line">    <span class="kw">fun</span> <span class="fn">coletar</span>(<span class="prop">item</span>: <span class="cls">String</span>)</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="cmnt">// Classe implementa a interface</span>
+<span class="line"><span class="kw">class</span> <span class="cls">Elfo</span>(<span class="kw">val</span> <span class="prop">nome</span>: <span class="cls">String</span>) : <span class="cls">Aventureiro</span> {</span>
+<span class="line">    <span class="kw">override fun</span> <span class="fn">explorar</span>() =</span>
+<span class="line">        <span class="fn">println</span>(<span class="str">"🧝 $nome explora a floresta!"</span>)</span>
+<span class="line">    <span class="kw">override fun</span> <span class="fn">coletar</span>(<span class="prop">item</span>: <span class="cls">String</span>) =</span>
+<span class="line">        <span class="fn">println</span>(<span class="str">"Coletou $item com precisão élfica"</span>)</span>
+<span class="line">}</span>`,
+    quiz:{
+      q:'Qual a diferença entre uma INTERFACE e uma CLASS em Kotlin?',
+      opts:['Não há diferença','Interface define contrato sem implementação; classe pode ter tudo implementado','Interface é mais rápida','Classes não podem implementar interfaces'],
+      correct:1,
+      feedback:'⭐ Correto! Interface é um contrato — define O QUE fazer, mas não COMO. A classe decide o como!'
+    }
+  },
+  {
+    id:'dataclass', icon:'📦', name:'Data Classes', color:'var(--accent4)',
+    xp:50, unlocked:true,
+    story:`Os escribas do reino estavam cansados de escrever os mesmos códigos repetitivos. Então descobriram as <span class="story-code">data classes</span> — que geram magia automaticamente!`,
+    explanation:`<strong style="color:var(--accent4)">Data Classes</strong> em Kotlin geram automaticamente: toString(), equals(), hashCode() e copy()!`,
+    code:`<span class="cmnt">// Data class = modelo de dados automático</span>
+<span class="line"><span class="kw">data class</span> <span class="cls">Item</span>(</span>
+<span class="line">    <span class="kw">val</span> <span class="prop">nome</span>: <span class="cls">String</span>,</span>
+<span class="line">    <span class="kw">val</span> <span class="prop">raridade</span>: <span class="cls">String</span>,</span>
+<span class="line">    <span class="kw">val</span> <span class="prop">poder</span>: <span class="cls">Int</span></span>
+<span class="line">)</span>
+<span class="line"></span>
+<span class="line"><span class="kw">val</span> <span class="prop">espada</span> = <span class="cls">Item</span>(<span class="str">"Espada Lendária"</span>, <span class="str">"Épico"</span>, <span class="num">999</span>)</span>
+<span class="line"><span class="fn">println</span>(<span class="prop">espada</span>)  <span class="cmnt">// Item(nome=Espada Lendária, raridade=Épico, poder=999)</span></span>
+<span class="line"></span>
+<span class="cmnt">// copy() — cria cópia modificada</span>
+<span class="line"><span class="kw">val</span> <span class="prop">espada2</span> = <span class="prop">espada</span>.<span class="fn">copy</span>(<span class="prop">poder</span> = <span class="num">1200</span>)</span>`,
+    quiz:{
+      q:'O que uma "data class" gera AUTOMATICAMENTE em Kotlin?',
+      opts:['Apenas o construtor','toString(), equals(), hashCode() e copy()','Uma interface nova','Um arquivo .json'],
+      correct:1,
+      feedback:'💎 Certo! Data classes são incrivelmente poderosas — economizam dezenas de linhas de código!'
+    }
+  }
+];
+
+const progressItems = [
+  {id:'class',icon:'🏗️',name:'Classes'},
+  {id:'inheritance',icon:'🧬',name:'Herança'},
+  {id:'encap',icon:'🔒',name:'Encapsulamento'},
+  {id:'poly',icon:'🔮',name:'Polimorfismo'},
+  {id:'interface',icon:'📜',name:'Interfaces'},
+  {id:'dataclass',icon:'📦',name:'Data Classes'},
+  {id:'battle',icon:'⚔️',name:'1ª Batalha'},
+  {id:'poly_demo',icon:'⚡',name:'Demo Poli.'}
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let xp = 0;
+let completed = new Set();
+let heroClass = { name:'Guerreiro', icon:'⚔️', color:'var(--warrior)' };
+
+// Battle state
+let bHeroHP = 100, bHeroMaxHP = 100, bEnemyHP = 80, bEnemyMaxHP = 80;
+let bHeroAtk = 30;
+const heroes = {
+  guerreiro:{ icon:'⚔️', name:'Guerreiro', hp:100, atk:30, heal:20 },
+  mago:{ icon:'🔮', name:'Mago', hp:60, atk:50, heal:10 },
+  arqueiro:{ icon:'🏹', name:'Arqueiro', hp:80, atk:35, heal:15 }
+};
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = () => {
+  createStars();
+  renderConceptGrid();
+  updateHero();
+  renderProgress();
+};
+
+function createStars(){
+  const s = document.getElementById('stars');
+  for(let i=0;i<60;i++){
+    const el = document.createElement('div');
+    el.className='star';
+    const sz = Math.random()*2+1;
+    el.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s`;
+    s.appendChild(el);
+  }
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(tab) {
+  ['world','hero','battle','poly','progress'].forEach(t => {
+    document.getElementById(`tab-${t}-content`).style.display = t===tab?'block':'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active', t===tab);
+  });
+  if(tab==='progress') renderProgress();
+}
+
+// ============================================================
+// CONCEPT GRID
+// ============================================================
+function renderConceptGrid(){
+  const grid = document.getElementById('concept-grid');
+  grid.innerHTML = concepts.map(c=>`
+    <div class="concept-card ${c.unlocked?'unlocked':'locked'} ${completed.has(c.id)?'done':''}"
+      style="--card-color:${c.color}"
+      onclick="${c.unlocked?`openLesson('${c.id}')`:''}"
+    >
+      <div class="c-icon">${c.icon}</div>
+      <div class="c-name">${c.name}</div>
+      <div class="c-desc">${c.explanation}</div>
+      <div class="c-badge">${completed.has(c.id)?'✅ FEITO':'+'+c.xp+' XP'}</div>
+    </div>
+  `).join('');
+}
+
+function openLesson(id){
+  const c = concepts.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('world-map').style.display='none';
+  document.getElementById('lesson-view').style.display='block';
+  document.getElementById('lesson-title').innerHTML=`${c.icon} ${c.name}`;
+
+  const content = document.getElementById('lesson-content');
+  content.innerHTML = `
+    <div class="story-box">${c.story}</div>
+    <div class="panel">
+      <div class="panel-title">📚 CONCEITO</div>
+      <p style="font-size:15px;line-height:1.6;margin-bottom:12px">${c.explanation}</p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">📋 COPIAR</button>
+        ${c.code}
+      </div>
+    </div>
+    <div class="quiz-box">
+      <div class="quiz-title">🎯 DESAFIO — Responda para ganhar XP!</div>
+      <div class="quiz-q">${c.quiz.q}</div>
+      <div class="quiz-options" id="quiz-opts-${id}">
+        ${c.quiz.opts.map((o,i)=>`
+          <button class="quiz-opt" onclick="checkLessonQuiz(this,'${id}',${i},${c.quiz.correct},'${c.quiz.feedback}')">
+            ${['🅰️','🅱️','🅲','🅳'][i]} ${o}
+          </button>
+        `).join('')}
+      </div>
+      <div class="quiz-feedback" id="qf-${id}"></div>
+    </div>
+  `;
+}
+
+function backToMap(){
+  document.getElementById('world-map').style.display='block';
+  document.getElementById('lesson-view').style.display='none';
+}
+
+function checkLessonQuiz(btn, id, chosen, correct, feedback){
+  const opts = document.querySelectorAll(`#quiz-opts-${id} .quiz-opt`);
+  opts.forEach(o=>o.disabled=true);
+  const c = concepts.find(x=>x.id===id);
+  if(chosen===correct){
+    btn.classList.add('correct');
+    const fb = document.getElementById(`qf-${id}`);
+    fb.className='quiz-feedback win'; fb.style.display='block'; fb.textContent=feedback;
+    if(!completed.has(id)){
+      completed.add(id);
+      gainXP(c.xp, c.name+' dominado!');
+      renderConceptGrid();
+    }
+  } else {
+    btn.classList.add('wrong');
+    opts[correct].classList.add('correct');
+    const fb = document.getElementById(`qf-${id}`);
+    fb.className='quiz-feedback lose'; fb.style.display='block';
+    fb.textContent='❌ Quase! Tente de novo na próxima vez.';
+  }
+}
+
+// ============================================================
+// XP
+// ============================================================
+function gainXP(amount, reason){
+  xp += amount;
+  document.getElementById('xp-count').textContent = xp;
+  document.getElementById('xp-fill').style.width = Math.min(xp/5, 100)+'%';
+  showToast('+'+ amount +' XP!', reason);
+  document.getElementById('prog-xp').textContent = xp;
+  document.getElementById('prog-level').textContent = Math.floor(xp/100)+1;
+}
+
+function showToast(msg, sub){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-xp').textContent = sub||'';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ============================================================
+// HERO BUILDER
+// ============================================================
+function selectClass(name, icon, el, color){
+  document.querySelectorAll('.class-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  heroClass = {name, icon, color};
+  updateHero();
+}
+
+function updateHero(){
+  const name = document.getElementById('hero-name-input').value || 'Herói';
+  const forca = +document.getElementById('sl-forca').value;
+  const defesa = +document.getElementById('sl-defesa').value;
+  const vel = +document.getElementById('sl-vel').value;
+
+  document.getElementById('val-forca').textContent=forca;
+  document.getElementById('val-defesa').textContent=defesa;
+  document.getElementById('val-vel').textContent=vel;
+
+  document.getElementById('hero-sprite').textContent=heroClass.icon;
+  document.getElementById('hero-name-display').textContent=name;
+  document.getElementById('hero-class-display').textContent=heroClass.name;
+
+  document.getElementById('bar-forca').style.width=forca+'%';
+  document.getElementById('bar-defesa').style.width=defesa+'%';
+  document.getElementById('bar-vel').style.width=vel+'%';
+  document.getElementById('num-forca').textContent=forca;
+  document.getElementById('num-defesa').textContent=defesa;
+  document.getElementById('num-vel').textContent=vel;
+
+  document.getElementById('hero-code-output').innerHTML = `<span class="cmnt">// Seu herói em Kotlin!</span>
+<span class="line"><span class="kw">data class</span> <span class="cls">${heroClass.name}</span>(</span>
+<span class="line">    <span class="kw">val</span> <span class="prop">nome</span>: <span class="cls">String</span> = <span class="str">"${name}"</span>,</span>
+<span class="line">    <span class="kw">val</span> <span class="prop">forca</span>: <span class="cls">Int</span> = <span class="num">${forca}</span>,</span>
+<span class="line">    <span class="kw">val</span> <span class="prop">defesa</span>: <span class="cls">Int</span> = <span class="num">${defesa}</span>,</span>
+<span class="line">    <span class="kw">val</span> <span class="prop">velocidade</span>: <span class="cls">Int</span> = <span class="num">${vel}</span></span>
+<span class="line">) : <span class="cls">Personagem</span>(<span class="prop">nome</span>)</span>
+<span class="line"></span>
+<span class="cmnt">// Criando seu herói (instância = objeto)</span>
+<span class="line"><span class="kw">val</span> <span class="prop">meuHeroi</span> = <span class="cls">${heroClass.name}</span>()`;
+}
+
+// ============================================================
+// BATTLE
+// ============================================================
+function startBattle(){
+  const sel = document.getElementById('hero-select').value;
+  const h = heroes[sel];
+  bHeroHP = h.hp; bHeroMaxHP = h.hp; bHeroAtk = h.atk;
+  bEnemyHP = 80; bEnemyMaxHP = 80;
+
+  document.getElementById('b-hero-sprite').textContent = h.icon;
+  document.getElementById('b-hero-name').textContent = h.name;
+  document.getElementById('battle-log').innerHTML='';
+
+  updateBattleUI();
+  log(`⚔️ Batalha iniciada! ${h.name} vs Goblin!`, 'info');
+  log(`🧬 Herança ativa: ${h.name} herda de Personagem!`, 'info');
+
+  document.getElementById('btn-start').disabled=true;
+  document.getElementById('btn-attack').disabled=false;
+  document.getElementById('btn-heal').disabled=false;
+
+  if(!completed.has('battle')){ completed.add('battle'); gainXP(30,'Primeira batalha!'); }
+}
+
+function attackEnemy(){
+  if(bEnemyHP<=0||bHeroHP<=0) return;
+  const dmg = bHeroAtk + Math.floor(Math.random()*10-5);
+  bEnemyHP = Math.max(0, bEnemyHP-dmg);
+  log(`⚔️ Você atacou! Causou <span class="log-dmg">${dmg} de dano</span>!`, 'dmg');
+  log(`<span style="color:var(--dim);font-size:14px">// heroi.atacar() → ${dmg}</span>`, '');
+
+  updateBattleUI();
+  if(bEnemyHP<=0){ log('🏆 Goblin derrotado! Vitória!','heal'); endBattle(true); return; }
+
+  // Enemy turn
+  setTimeout(()=>{
+    const edm = 10+Math.floor(Math.random()*8);
+    bHeroHP = Math.max(0, bHeroHP-edm);
+    log(`👹 Goblin atacou! Causou <span class="log-dmg">${edm} de dano</span>!`, 'dmg');
+    updateBattleUI();
+    if(bHeroHP<=0){ log('💀 Você foi derrotado...',''); endBattle(false); }
+  }, 500);
+}
+
+function healHero(){
+  const sel = document.getElementById('hero-select').value;
+  const h = heroes[sel];
+  const heal = h.heal;
+  bHeroHP = Math.min(bHeroMaxHP, bHeroHP+heal);
+  log(`💚 Você se curou! <span class="log-heal">+${heal} HP</span>`, 'heal');
+  updateBattleUI();
+}
+
+function endBattle(won){
+  document.getElementById('btn-attack').disabled=true;
+  document.getElementById('btn-heal').disabled=true;
+}
+
+function resetBattle(){
+  bHeroHP=100;bEnemyHP=80;
+  document.getElementById('battle-log').innerHTML='<span style="color:var(--dim);font-family:VT323,monospace;font-size:18px">// Selecione seu herói e comece!</span>';
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-attack').disabled=true;
+  document.getElementById('btn-heal').disabled=true;
+  updateBattleUI();
+}
+
+function updateBattleUI(){
+  document.getElementById('b-hero-hp').style.width=(bHeroHP/bHeroMaxHP*100)+'%';
+  document.getElementById('b-hero-hp-val').textContent=bHeroHP;
+  document.getElementById('b-enemy-hp').style.width=(bEnemyHP/bEnemyMaxHP*100)+'%';
+  document.getElementById('b-enemy-hp-val').textContent=bEnemyHP;
+}
+
+function log(msg, type){
+  const bl = document.getElementById('battle-log');
+  const el = document.createElement('div');
+  el.className='log-entry';
+  el.innerHTML=`<span style="color:var(--dim)">&gt;</span> ${msg}`;
+  bl.appendChild(el);
+  bl.scrollTop=bl.scrollHeight;
+}
+
+// ============================================================
+// POLYMORPHISM DEMO
+// ============================================================
+const polyData = {
+  guerreiro:{ out:'⚔️ Golpe Brutal! Dano: 30', delay:0 },
+  mago:{ out:'✨ Bola de Fogo! Dano: 50', delay:400 },
+  arqueiro:{ out:'🏹 Flecha Certeira! Dano: 35', delay:800 },
+  druida:{ out:'🌿 Raízes Presas! Dano: 20', delay:1200 }
+};
+
+function runPolymorphism(){
+  Object.keys(polyData).forEach(k=>{
+    const d = polyData[k];
+    const card = document.getElementById('poly-'+k);
+    const out = document.getElementById('po-'+k);
+    out.textContent='...';
+    card.classList.remove('highlighted');
+    setTimeout(()=>{
+      card.classList.add('highlighted');
+      out.textContent=d.out;
+      setTimeout(()=>card.classList.remove('highlighted'),600);
+    }, d.delay);
+  });
+  if(!completed.has('poly_demo')){ completed.add('poly_demo'); gainXP(40,'Polimorfismo demonstrado!'); }
+}
+
+function checkQuiz(btn, id, isCorrect){
+  const opts = document.querySelectorAll(`#quiz-enc-opts .quiz-opt`);
+  opts.forEach(o=>o.disabled=true);
+  const fb = document.getElementById(`qf-${id}`);
+  if(isCorrect){
+    btn.classList.add('correct');
+    fb.className='quiz-feedback win'; fb.style.display='block';
+    fb.textContent='🔐 Excelente! Encapsulamento protege os dados e garante que só código autorizado os modifique!';
+    gainXP(40,'Encapsulamento compreendido!');
+  } else {
+    btn.classList.add('wrong');
+    opts.forEach(o=>{ if(o.textContent.includes('proteger')) o.classList.add('correct'); });
+    fb.className='quiz-feedback lose'; fb.style.display='block';
+    fb.textContent='❌ Não exatamente! Encapsulamento é sobre PROTEÇÃO de dados.';
+  }
+}
+
+// ============================================================
+// PROGRESS
+// ============================================================
+function renderProgress(){
+  const grid = document.getElementById('progress-grid');
+  grid.innerHTML = progressItems.map(p=>`
+    <div class="prog-item ${completed.has(p.id)?'done':''}">
+      <div class="pi-icon">${p.icon}</div>
+      <div class="pi-name">${p.name}</div>
+      <div class="pi-check">${completed.has(p.id)?'✅':'⬜'}</div>
+    </div>
+  `).join('');
+  document.getElementById('prog-xp').textContent=xp;
+  document.getElementById('prog-level').textContent=Math.floor(xp/100)+1;
+}
+
+function copyCode(btn){
+  btn.textContent='✅ COPIADO!';
+  setTimeout(()=>btn.textContent='📋 COPIAR', 2000);
+}
+</script>
+</body>
+</html>
